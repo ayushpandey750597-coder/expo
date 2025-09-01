@@ -163,23 +163,10 @@ The following Expo modules are brought in as dependencies of the `expo` package:
 - [`expo-asset`](/versions/latest/sdk/asset) - A JavaScript-only package that builds around `expo-file-system` and provides a common foundation for assets across all Expo modules.
 - [`expo-constants`](/versions/latest/sdk/constants) - Provides access to the manifest.
 - [`expo-file-system`](/versions/latest/sdk/filesystem) - Interact with the device file system. Used by `expo-asset` and many other Expo modules. Commonly used directly by developers in application code.
-- [`expo-font`](/versions/latest/sdk/font) - Load fonts at runtime. This module is optional and can be safely removed, however; it is recommended if you use `expo-dev-client` for development and it is required by `@expo/vector-icons`.
-- [`expo-keep-awake`](/versions/latest/sdk/keep-awake) - Prevents your device from going to sleep while developing your app. This module is optional and can be safely removed.
-
-To exclude any of these modules, refer to the following guide on [excluding modules from autolinking](#excluding-specific-modules-from-autolinking).
-
-### Excluding specific modules from autolinking
-
-If you need to exclude native code from Expo modules you are not using, but were installed by other dependencies, you can use the [`expo.autolinking.exclude`](/modules/autolinking/#exclude) property in **package.json**:
-
-```json package.json
-{
-  "name": "...",
-  "dependencies": {},
-  "expo": {
-    "autolinking": {
-      "exclude": ["expo-keep-awake"]
-    }
-  }
+- [`expo-font`](/versions/latest/sdk/font) - Load fonts at runtime. This module is optional and can be safely removed, however; it is recommended if you use `expo-dev-client` foake`](/versions/l}
 }
-```
+```cd MyLearningApp
+npm install
+npx expo install expo-linear-gradient @react-native-async-storage/async-storage @expo/vector-icons react-native-screens react-native-safe-area-context
+npm install @react-navigation/native @react-navigation/native-stack @react-navigation/bottom-tabs
+
