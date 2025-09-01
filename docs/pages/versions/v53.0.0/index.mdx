@@ -126,3 +126,280 @@ Each version of Expo SDK supports a minimum OS version of Android and iOS. For A
 <AndroidIOSCompatibilityTable startVersion="53.0.0" endVersion="51.0.0" />
 
 When deciding whether to upgrade your Expo SDK version, consider both Expo's SDK version and app store submission requirements, as described in the above table. Google Play Store and Apple App Store periodically increase their minimum required OS versions and API levels, which are required for new app submissions. Expo has no control over the app store requirements, and you should check [Google](https://developer.android.com/studio/build) and [Apple](https://developer.apple.com/news/upcoming-requirements/) for the current store submission requirements.
+
+
+import React, { useEffect, useState } from "react";
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Alert, StyleSheet } from "react-native";
+import { NavigationContainer } from "@react-navigation/native";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
+
+const Stack = createNativeStackNavigator();
+const Tab = createBottomTabNavigator();
+
+/* Gradient Button */
+const GradientButton = ({ title, onPress, colors = ["#4facfe", "#00f2fe"] }) => (
+  <TouchableOpacity onPress={onPress} activeOpacity={0.9} style={{ width: "100%" }}>
+    <LinearGradient colors={colors} style={styles.gradientBtn}>
+      <Text style={styles.gradientBtnText}>{title}</Text>
+    </LinearGradient>
+  </TouchableOpacity>
+);
+
+/* Card */
+const Card = ({ children, style }) => (
+  <View style={[styles.card, style]}>{children}</View>
+);
+
+/* Splash Screen */
+const Splash = () => (
+  <LinearGradient colors={["#00c6ff", "#0072ff"]} style={styles.splash}>
+    <Ionicons name="book" size={90} color="#fff" style={{ marginBottom: 16 }} />
+    <Text style={styles.splashTitle}>My Learning App</Text>
+    <ActivityIndicator size="large" color="#fff" style={{ marginTop: 18 }} />
+  </LinearGradient>
+);
+
+/* Onboarding */
+const Onboarding = ({ navigation }) => {
+  return (
+    <LinearGradient colors={["#ff6a00", "#ee0979"]} style={styles.onboarding}>
+      <Ionicons name="rocket" size={150} color="#fff" style={{ marginBottom: 18 }} />
+      <Text style={styles.onboardingTitle}>Welcome to My Learning App</Text>
+      <Text style={styles.onboardingSub}>
+        Learn anytime, anywhere. Start your journey with us today!
+      </Text>
+      <TouchableOpacity
+        onPress={() => navigation.replace("Login")}
+        style={styles.onboardingCTA}
+        activeOpacity={0.9}
+      >
+        <Text style={styles.onboardingCTAText}>Get Started →</Text>
+      </TouchableOpacity>
+    </LinearGradient>
+  );
+};
+
+/* Login (OTP = 1234) */
+const Login = ({ navigation, setIsLoggedIn }) => {
+  const [phone, setPhone] = useState("");
+  const [otp, setOtp] = useState("");
+  const [step, setStep] = useState(1);
+  const [name, setName] = useState("");
+
+  const handleSendOtp = async () => {
+    if (name.trim().length === 0) {
+      Alert.alert("Invalid Name", "Please enter your name.");
+      return;
+    }
+    if (phone.length < 10) {
+      Alert.alert("Invalid Number", "Please enter a valid phone number.");
+      return;
+    }
+    await AsyncStorage.setItem("phone", phone);
+    await AsyncStorage.setItem("name", name);
+    Alert.alert("OTP Sent", "Use 1234 as test OTP.");
+    setStep(2);
+  };
+
+  const handleVerifyOtp = async () => {
+    if (otp !== "1234") {
+      Alert.alert("Invalid OTP", "Please enter the correct OTP (1234).");
+      return;
+    }
+    await AsyncStorage.setItem("isLoggedIn", "true");
+    setIsLoggedIn(true);
+    navigation.replace("Main");
+  };
+
+  return (
+    <Card style={{ padding: 20, width: "100%" }}>
+      <Text style={styles.header}>Login with OTP</Text>
+      {step === 1 ? (
+        <>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter Name"
+            value={name}
+            onChangeText={setName}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Enter Phone"
+            keyboardType="phone-pad"
+            value={phone}
+            onChangeText={setPhone}
+          />
+          <GradientButton title="Send OTP" onPress={handleSendOtp} />
+        </>
+      ) : (
+        <>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter OTP"
+            keyboardType="numeric"
+            value={otp}
+            onChangeText={setOtp}
+          />
+          <GradientButton title="Verify OTP" onPress={handleVerifyOtp} />
+        </>
+      )}
+    </Card>
+  );
+};
+
+/* Profile */
+const Profile = ({ navigation }) => {
+  const [phone, setPhone] = useState("");
+  const [name, setName] = useState("");
+
+  const handleLogout = async () => {
+    await AsyncStorage.multiRemove(["isLoggedIn", "phone", "name"]);
+    navigation.replace("Onboarding");
+  };
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      const savedPhone = await AsyncStorage.getItem("phone");
+      const savedName = await AsyncStorage.getItem("name");
+      if (savedPhone) setPhone(savedPhone);
+      if (savedName) setName(savedName);
+    };
+    loadProfile();
+  }, []);
+
+  return (
+    <Card style={{ width: "100%", padding: 20 }}>
+      <Text style={styles.header}>Profile</Text>
+      <Text>👤 Name: {name || "Not Available"}</Text>
+      <Text>📱 Phone: {phone || "Not Available"}</Text>
+      <GradientButton
+        title="Logout"
+        onPress={handleLogout}
+        colors={["#ff4b2b", "#ff416c"]}
+      />
+    </Card>
+  );
+};
+
+/* Home */
+const Home = ({ navigation }) => {
+  const [name, setName] = useState("");
+  useEffect(() => {
+    const loadName = async () => {
+      const savedName = await AsyncStorage.getItem("name");
+      if (savedName) setName(savedName);
+    };
+    loadName();
+  }, []);
+
+  const ActionCard = ({ title, screen }) => (
+    <TouchableOpacity
+      onPress={() => navigation.navigate(screen)}
+      style={styles.actionCard}
+      activeOpacity={0.9}
+    >
+      <Text style={{ fontSize: 16, fontWeight: "600" }}>{title}</Text>
+    </TouchableOpacity>
+  );
+
+  return (
+    <LinearGradient colors={["#4facfe", "#00f2fe"]} style={{ flex: 1, padding: 20 }}>
+      <Text style={{ fontSize: 24, fontWeight: "bold", color: "#fff", marginTop: 40 }}>
+        👋 Welcome {name || "User"}!
+      </Text>
+      <View style={{ flexDirection: "row", marginTop: 40 }}>
+        <ActionCard title="Courses" screen="Courses" />
+        <ActionCard title="Practice" screen="Practice" />
+      </View>
+      <View style={{ flexDirection: "row" }}>
+        <ActionCard title="Tests" screen="Tests" />
+        <ActionCard title="Profile" screen="Profile" />
+      </View>
+    </LinearGradient>
+  );
+};
+
+/* Simple Screens */
+const Courses = () => (
+  <LinearGradient colors={["#43cea2", "#185a9d"]} style={styles.screenCenter}>
+    <Text style={{ color: "#fff", fontSize: 22 }}>📚 Courses</Text>
+  </LinearGradient>
+);
+const Practice = () => (
+  <LinearGradient colors={["#ff9966", "#ff5e62"]} style={styles.screenCenter}>
+    <Text style={{ color: "#fff", fontSize: 22 }}>✏️ Practice</Text>
+  </LinearGradient>
+);
+const Tests = () => (
+  <LinearGradient colors={["#8e2de2", "#4a00e0"]} style={styles.screenCenter}>
+    <Text style={{ color: "#fff", fontSize: 22 }}>📝 Tests</Text>
+  </LinearGradient>
+);
+
+/* Bottom Tabs */
+function MainTabs() {
+  return (
+    <Tab.Navigator screenOptions={{ headerShown: false }}>
+      <Tab.Screen name="Home" component={Home} />
+      <Tab.Screen name="Courses" component={Courses} />
+      <Tab.Screen name="Practice" component={Practice} />
+      <Tab.Screen name="Tests" component={Tests} />
+      <Tab.Screen name="Profile" component={Profile} />
+    </Tab.Navigator>
+  );
+}
+
+/* Root App */
+export default function App() {
+  const [isLoading, setIsLoading] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    const checkLogin = async () => {
+      const storedLogin = await AsyncStorage.getItem("isLoggedIn");
+      if (storedLogin === "true") setIsLoggedIn(true);
+      setTimeout(() => setIsLoading(false), 800);
+    };
+    checkLogin();
+  }, []);
+
+  if (isLoading) return <Splash />;
+
+  return (
+    <NavigationContainer>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        {!isLoggedIn ? (
+          <>
+            <Stack.Screen name="Onboarding" component={Onboarding} />
+            <Stack.Screen name="Login">
+              {(props) => <Login {...props} setIsLoggedIn={setIsLoggedIn} />}
+            </Stack.Screen>
+          </>
+        ) : null}
+        <Stack.Screen name="Main" component={MainTabs} />
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+}
+
+/* Styles */
+const styles = StyleSheet.create({
+  splash: { flex: 1, justifyContent: "center", alignItems: "center" },
+  splashTitle: { fontSize: 28, fontWeight: "bold", color: "#fff" },
+  onboarding: { flex: 1, justifyContent: "center", alignItems: "center", padding: 20 },
+  onboardingTitle: { fontSize: 26, fontWeight: "bold", color: "#fff", textAlign: "center", marginBottom: 10 },
+  onboardingSub: { fontSize: 16, color: "#f0f0f0", textAlign: "center", marginBottom: 24 },
+  onboardingCTA: { backgroundColor: "#fff", paddingVertical: 14, paddingHorizontal: 40, borderRadius: 30, elevation: 5 },
+  onboardingCTAText: { color: "#ee0979", fontSize: 18, fontWeight: "bold" },
+  screenCenter: { flex: 1, justifyContent: "center", alignItems: "center", padding: 20 },
+  card: { backgroundColor: "#fff", borderRadius: 20, padding: 12, elevation: 6 },
+  header: { fontSize: 20, fontWeight: "700", color: "#1E90FF", marginBottom: 12, textAlign: "center" },
+  input: { borderWidth: 1, borderColor: "#e0e0e0", borderRadius: 12, padding: 12, marginBottom: 12, backgroundColor: "#f9f9f9", width: "100%" },
+  gradientBtn: { borderRadius: 12, paddingVertical: 12, paddingHorizontal: 20, marginVertical: 8, alignItems: "center", elevation: 5 },
+  gradientBtnText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
+  actionCard: { backgroundColor: "#fff", borderRadius: 16, padding: 20, alignItems: "center", justifyContent: "center", flex: 1, margin: 8, elevation: 5 },
+});
